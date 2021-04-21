@@ -171,6 +171,9 @@
   }
 
   function buildGraph(data) {
+    $(".d3-visualization svg").remove();
+    $(".d3-visualization").append('<svg width="960" height="600"></svg>');
+    
     var svg = d3.select("svg"),
       width = +svg.attr("width"),
       height = +svg.attr("height");
