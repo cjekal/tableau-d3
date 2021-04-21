@@ -24,12 +24,28 @@
       // Find a specific worksheet
       var worksheet = worksheets.find(function (sheet) {
         return sheet.name === "Person";
-        console.log ("sheet.name:", sheet.name)
+        console.log("sheet.name:", sheet.name)
       });
 
+      var erData = worksheets.find(function (sheet) {
+        console.log("sheet.name:", sheet.name)
+        return sheet.name === "attorney";
+      });
+      console.log("erData", erData);
 
-
-
+      let dataArr = [];
+      erData.getSummaryDataAsync().then(data => {
+        let dataJson;
+        data.data.map(d => {
+          dataJson = {};
+          dataJson[data.columns[0].fieldName] = d[0].value; //1st column
+          dataJson[data.columns[1].fieldName] = d[1].value; //2nd column
+          dataJson[data.columns[2].fieldName] = d[2].value; //3rd column
+          dataArr.push(dataJson);
+        })
+        console.log("dataArr", dataArr);
+        buildGraph(dataArr);
+      });
 
       // Maps dataSource id to dataSource so we can keep track of unique dataSources.
       let dashboardDataSources = {};
@@ -64,14 +80,14 @@
   });
 
   // Refreshes the given dataSource.
-  function refreshDataSource (dataSource) {
+  function refreshDataSource(dataSource) {
     dataSource.refreshAsync().then(function () {
       console.log(dataSource.name + ': Refreshed Successfully');
     });
   }
 
   // Displays a modal dialog with more details about the given dataSource.
-  function showModal (dataSource) {
+  function showModal(dataSource) {
     let modal = $('#infoModal');
 
     $('#nameDetail').text(dataSource.name);
@@ -115,7 +131,7 @@
 
   // Constructs UI that displays all the dataSources in this dashboard
   // given a mapping from dataSourceId to dataSource objects.
-  function buildDataSourcesTable (dataSources) {
+  function buildDataSourcesTable(dataSources) {
     // Clear the table first.
     $('#dataSourcesTable > tbody tr').remove();
     const dataSourcesTable = $('#dataSourcesTable > tbody')[0];
@@ -142,6 +158,114 @@
       nameCell.innerHTML = dataSource.name;
       refreshCell.appendChild(refreshButton);
       infoCell.appendChild(infoSpan);
+    }
+  }
+
+  function buildGraph(data) {
+    var svg = d3.select("svg"),
+      width = +svg.attr("width"),
+      height = +svg.attr("height");
+    
+    var color = d3.scaleOrdinal(d3.schemeAccent);
+
+    var simulation = d3.forceSimulation()
+      .force("link", d3.forceLink().id(function (d) { return d.id; }))
+      .force("charge", d3.forceManyBody())
+      .force("center", d3.forceCenter(width / 2, height / 2));
+
+    var canonicalNodes = _.uniqBy(data, "canonical_component_id").map(canonical => {
+      return {
+        "id": "canonical" + canonical.canonical_component_id,
+        "name": "Group " + canonical.canonical_component_id,
+        "group": 8
+      }
+    });
+    var sourceNodes = _.uniqBy(data, "attorney_id_target").map(source => {
+      return {
+        "id": "source" + source.attorney_id_target,
+        "name": source.full_name_source,
+        "group": 1
+      }
+    });
+    var links = _.map(data, row => {
+      return {
+        "source": "canonical" + row.canonical_component_id,
+        "target": "source" + row.attorney_id_target,
+        "value": 1
+      }
+    });
+
+    const graph = {
+      "nodes": _.union(canonicalNodes, sourceNodes),
+      "links": links
+    };
+    console.log("graph", graph);
+
+    var link = svg.append("g")
+      .attr("class", "links")
+      .selectAll("line")
+      .data(graph.links)
+      .enter().append("line")
+      .attr("stroke-width", function (d) { return Math.sqrt(d.value); });
+
+    var node = svg.append("g")
+      .attr("class", "nodes")
+      .selectAll("circle")
+      .data(graph.nodes)
+      .enter().append("circle")
+      .attr("r", 5)
+      .attr("fill", function (d) { return color(d.group); })
+      .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+    var label = svg.append("g")
+      .attr("class", "labels")
+      .selectAll("circle")
+      .data(graph.nodes)
+      .enter().append("text")
+      .text(function (d) { return d.name; })
+
+    simulation
+      .nodes(graph.nodes)
+      .on("tick", ticked);
+
+    simulation.force("link")
+      .links(graph.links);
+
+    function ticked() {
+      link
+        .attr("x1", function (d) { return d.source.x; })
+        .attr("y1", function (d) { return d.source.y; })
+        .attr("x2", function (d) { return d.target.x; })
+        .attr("y2", function (d) { return d.target.y; });
+
+      node
+        .attr("cx", function (d) { return d.x; })
+        .attr("cy", function (d) { return d.y; });
+
+      label
+        .attr("x", function (d) { return d.x; })
+        .attr("y", function (d) { return d.y - 10; });
+    }
+
+
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
     }
   }
 })();

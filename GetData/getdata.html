@@ -1,59 +1,98 @@
-
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Datasources Sample</title>
 
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datasources Sample</title>
 
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" >
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" ></script>
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 
-    <!-- Extensions Library (this will be hosted on a CDN eventually) -->
-    <script src="../../lib/tableau.extensions.1.latest.js"></script>
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
-    <!-- Our extension's code -->
-    <script src="./getdata.js"></script>
-  </head>
-  <body>
-    <div class="container">
-      <!-- DataSources Table -->
-      <div id="dataSources">
-        <h4>All DataSources</h4>
-        <div class="table-responsive">
-          <table id="loading" class="table">
-            <tbody><tr><td>Loading...</td></tr></tbody>
-          </table>         
-          <table id="dataSourcesTable" class="table table-striped hidden">
-            <thead>
-              <tr>
-                <th>DataSource Name</th>
-                <th>Auto Refresh</th>
-                <th style="width: 100%">Info</th>
-              </tr>
-            </thead>
-            <tbody>
-            </tbody>
-          </table>
-        </div>
+  <!-- lodash -->
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
+
+  <!-- D3 -->
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+
+  <!-- Extensions Library (this will be hosted on a CDN eventually) -->
+  <script src="../../lib/tableau.extensions.1.latest.js"></script>
+
+  <!-- Our extension's code -->
+  <script src="./getdata.js"></script>
+
+  <style>
+    .links line {
+      stroke: #999;
+      stroke-opacity: 0.6;
+    }
+
+    .nodes circle {
+      stroke: #fff;
+      stroke-width: 1.5px;
+    }
+
+    .labels text {
+      pointer-events: none;
+      text-anchor: middle;
+      font: 10px sans-serif;
+    }
+
+    .d3-visualization {
+      width: 960;
+      height: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- DataSources Table -->
+    <div id="dataSources">
+      <h4>All DataSources</h4>
+      <div class="table-responsive">
+        <table id="loading" class="table">
+          <tbody>
+            <tr>
+              <td>Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+        <table id="dataSourcesTable" class="table table-striped hidden">
+          <thead>
+            <tr>
+              <th>DataSource Name</th>
+              <th>Auto Refresh</th>
+              <th style="width: 100%">Info</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
       </div>
+    </div>
 
-      <!-- More dataSource info modal -->
-      <div class="modal fade" id="infoModal" role="dialog">
-        <div class="modal-dialog">
-          <!-- Modal content-->
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal">&times;</button>
-              <h4 class="modal-title">DataSource Details</h4>
-            </div>
-            <div id="dataSourceDetails" class="modal-body">
-              <div class="table-responsive">          
+    <div class="d3-visualization">
+      <h4>Attorney Visualization</h4>
+      <svg width="960" height="600"></svg>
+    </div>
+
+    <!-- More dataSource info modal -->
+    <div class="modal fade" id="infoModal" role="dialog">
+      <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title">DataSource Details</h4>
+          </div>
+          <div id="dataSourceDetails" class="modal-body">
+            <div class="table-responsive">
               <table id="detailsTable" class="table">
                 <tbody>
                   <tr>
@@ -89,9 +128,8 @@
           </div>
         </div>
       </div>
-      
     </div>
   </div>
-    </div>
-  </body>
+</body>
+
 </html>
