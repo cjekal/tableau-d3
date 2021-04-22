@@ -21,30 +21,23 @@
       console.log("worksheets:");
       console.table(worksheets);
 
-      // Find a specific worksheet
-      var worksheet = worksheets.find(function (sheet) {
-        return sheet.name === "Person";
-        console.log("sheet.name:", sheet.name)
-      });
-
       var erData = worksheets.find(function (sheet) {
         console.log("sheet.name:", sheet.name)
-        return sheet.name === "attorney";
+        return sheet.name === "Attorney Table w/ Search";
       });
       console.log("erData", erData);
 
-      let dataArr = [];
       erData.getSummaryDataAsync().then(data => {
-        let dataJson;
-        data.data.map(d => {
-          dataJson = {};
-          dataJson[data.columns[0].fieldName] = d[0].value; //1st column
-          dataJson[data.columns[1].fieldName] = d[1].value; //2nd column
-          dataJson[data.columns[2].fieldName] = d[2].value; //3rd column
-          dataArr.push(dataJson);
-        })
-        console.log("dataArr", dataArr);
+        let dataArr = processDataTable(data);
         buildGraph(dataArr);
+      });
+
+      erData.addEventListener(tableau.TableauEventType.FilterChanged, handler => {
+        console.log("filter changed!", handler);
+        handler.worksheet.getSummaryDataAsync().then(data => {
+          let dataArr = processDataTable(data);
+          buildGraph(dataArr);
+        });
       });
 
       // Maps dataSource id to dataSource so we can keep track of unique dataSources.
@@ -161,11 +154,30 @@
     }
   }
 
+  function processDataTable(dataTable) {
+    console.log("dataTable", dataTable);
+
+    let dataArr = [];
+    let dataJson;
+    dataTable.data.map(d => {
+      dataJson = {};
+      dataJson[dataTable.columns[0].fieldName] = d[0].value; //1st column
+      dataJson[dataTable.columns[1].fieldName] = d[1].value; //2nd column
+      dataJson[dataTable.columns[2].fieldName] = d[2].value; //3rd column
+      dataArr.push(dataJson);
+    });
+    console.log("dataArr", dataArr);
+    return dataArr;
+  }
+
   function buildGraph(data) {
+    $(".d3-visualization svg").remove();
+    $(".d3-visualization").append('<svg width="960" height="600"></svg>');
+    
     var svg = d3.select("svg"),
       width = +svg.attr("width"),
       height = +svg.attr("height");
-    
+
     var color = d3.scaleOrdinal(d3.schemeAccent);
 
     var simulation = d3.forceSimulation()
