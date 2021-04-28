@@ -156,7 +156,6 @@
 
   function processDataTable(dataTable) {
     console.log("dataTable", dataTable);
-
     let dataArr = [];
     let dataJson;
     dataTable.data.map(d => {
@@ -164,6 +163,9 @@
       dataJson[dataTable.columns[0].fieldName] = d[0].value; //1st column
       dataJson[dataTable.columns[1].fieldName] = d[1].value; //2nd column
       dataJson[dataTable.columns[2].fieldName] = d[2].value; //3rd column
+      dataJson[dataTable.columns[3].fieldName] = d[3].value; //4rd column
+      dataJson[dataTable.columns[4].fieldName] = d[4].value; //5rd column
+      dataJson[dataTable.columns[5].fieldName] = d[5].value; //6rd column
       dataArr.push(dataJson);
     });
     console.log("dataArr", dataArr);
@@ -178,38 +180,74 @@
       width = +svg.attr("width"),
       height = +svg.attr("height");
 
-    var color = d3.scaleOrdinal(d3.schemeAccent);
-
     var simulation = d3.forceSimulation()
-      .force("link", d3.forceLink().id(function (d) { return d.id; }))
-      .force("charge", d3.forceManyBody())
-      .force("center", d3.forceCenter(width / 2, height / 2));
+      .force("link", d3.forceLink().id(function (d) { return d.id; }).distance(50))
+      .force("charge", d3.forceManyBody().strength(-50))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force('collision', d3.forceCollide().radius(5));
 
-    var canonicalNodes = _.uniqBy(data, "canonical_component_id").map(canonical => {
+    var canonicalNodes = _.uniqBy(data, "Group").map(canonical => {
       return {
-        "id": "canonical" + canonical.canonical_component_id,
-        "name": "Group " + canonical.canonical_component_id,
-        "group": 8
+        "id": "canonical" + canonical.Group,
+        "name": "Group " + canonical.Group,
+        "color": "#00FF00", 
+        "radius": 10
       }
     });
-    var sourceNodes = _.uniqBy(data, "attorney_id_target").map(source => {
+    var sourceNodes = _.uniqBy(data, "Attorney Name").map(source => {
       return {
-        "id": "source" + source.attorney_id_target,
-        "name": source.full_name_source,
-        "group": 1
+        "id": "source" + source[ 'Attorney Name' ],
+        "name": source[ 'Attorney Name' ],
+        "color": "#808080", 
+        "radius": 10
       }
     });
+
+    var ataNodes = _.map(data, ata => {
+      return {
+        "id": "ata" + ata[ 'SUM(Ata Hits)' ] + ata[ 'Attorney Name' ], 
+        "name": ata[ 'SUM(Ata Hits)' ], 
+        "color": "#FF0000", 
+        "radius": 15
+      }
+    });
+
+    var casesNodes = _.map(data, cases => {
+      return {
+        "id": "cases" + cases[ 'AGG(Total Cases Filed)' ] + cases[ 'Attorney Name' ], 
+        "name": cases[ 'AGG(Total Cases Filed)' ], 
+        "color": "#000000", 
+        "radius": 15
+      }
+    });
+
     var links = _.map(data, row => {
       return {
-        "source": "canonical" + row.canonical_component_id,
-        "target": "source" + row.attorney_id_target,
+        "source": "canonical" + row.Group,
+        "target": "source" + row[ 'Attorney Name' ],
+        "value": 1
+      }
+    });
+
+    var atalinks = _.map(data, row => {
+      return {
+        "source": "source" + row[ 'Attorney Name' ],
+        "target": "ata" + row[ 'SUM(Ata Hits)' ] + row[ 'Attorney Name' ],
+        "value": 1
+      }
+    });
+
+    var caseslinks = _.map(data, row => {
+      return {
+        "source": "source" + row[ 'Attorney Name' ],
+        "target": "cases" + row[ 'AGG(Total Cases Filed)' ] + row[ 'Attorney Name' ],
         "value": 1
       }
     });
 
     const graph = {
-      "nodes": _.union(canonicalNodes, sourceNodes),
-      "links": links
+      "nodes": _.union(canonicalNodes, sourceNodes, ataNodes, casesNodes),
+      "links": _.union(links, atalinks, caseslinks),
     };
     console.log("graph", graph);
 
@@ -225,8 +263,8 @@
       .selectAll("circle")
       .data(graph.nodes)
       .enter().append("circle")
-      .attr("r", 5)
-      .attr("fill", function (d) { return color(d.group); })
+      .attr("r",function (d) { return d.radius; })
+      .attr("fill", function (d) { return d.color; }) 
       .call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
@@ -238,6 +276,9 @@
       .data(graph.nodes)
       .enter().append("text")
       .text(function (d) { return d.name; })
+      .attr('font-size', 10)
+      .attr('dx', 0)
+      .attr('dy', 15);
 
     simulation
       .nodes(graph.nodes)
@@ -245,6 +286,7 @@
 
     simulation.force("link")
       .links(graph.links);
+
 
     function ticked() {
       link
